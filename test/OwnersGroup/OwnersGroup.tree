@@ -1,0 +1,81 @@
+OwnersGroupTest
+├── when initializing the contract
+│   ├── when given an empty array of owners
+│   │   └── it should revert with NoOwnersProvided error
+│   ├── when given an array with a zero address
+│   │   └── it should revert with InvalidOwner error
+│   ├── when given a valid array of owners
+│   │   ├── it should set all initial owners correctly
+│   │   └── it should set the correct owner count
+│   └── when given an invalid minRequiredApprovers
+│       ├── it should revert with InvalidMinRequiredApprovers error when greater than owner count
+│       └── it should revert with InvalidMinRequiredApprovers error when zero
+│
+├── when using the onlyOwners modifier
+│   ├── when called by a non-owner
+│   │   └── it should revert with NotOwner error
+│   └── when called by an owner
+│       └── it should allow the function to proceed
+│
+├── when using the onlyWhitelisted modifier
+│   ├── when called by a non-whitelisted address
+│   │   └── it should revert with NotWhitelisted error
+│   └── when called by a whitelisted address
+│       └── it should allow the function to proceed
+│
+├── when adding a new owner
+│   ├── when called without full approval
+│   │   └── it should not add the new owner
+│   └── when called with full approval
+│       ├── it should add the new owner
+│       ├── it should increase the owner count
+│       └── it should emit an OwnerAdded event
+│
+├── when removing an owner
+│   ├── when called without full approval
+│   │   └── it should not remove the owner
+│   ├── when called with full approval
+│   │   ├── it should remove the owner
+│   │   ├── it should decrease the owner count
+│   │   └── it should emit an OwnerRemoved event
+│   └── when removing would result in fewer owners than minRequiredApprovers
+│       └── it should revert with CannotRemoveOwner error
+│
+├── when approving a request
+│   ├── when called by a non-whitelisted address
+│   │   └── it should revert with NotWhitelisted error
+│   └── when called by a whitelisted address
+│       ├── when called by a non-owner
+│       │   └── it should revert with NotOwner error
+│       ├── when it's the first approval
+│       │   ├── it should record the approval
+│       │   ├── it should emit a RequestApproved event
+│       │   └── it should return false
+│       ├── when it's a duplicate approval
+│       │   └── it should not change the approval state
+│       ├── when it's not the last required approval
+│       │   ├── it should record the approval
+│       │   ├── it should emit a RequestApproved event
+│       │   └── it should return false
+│       └── when it's the last required approval
+│           ├── it should record the approval
+│           ├── it should emit a RequestApproved event
+│           ├── it should emit a RequestExecuted event
+│           ├── it should reset approvals for the request
+│           └── it should return true
+│
+├── when checking if a request is approved
+│   ├── when called by a non-whitelisted address
+│   │   └── it should revert with NotWhitelisted error
+│   └── when called by a whitelisted address
+│       ├── when the request is not fully approved
+│       │   └── it should return false
+│       └── when the request is fully approved
+│           └── it should return true
+│
+└── when setting whitelist status
+    ├── when called without full approval
+    │   └── it should not change the whitelist status
+    └── when called with full approval
+        ├── it should change the whitelist status
+        └── it should emit a Whitelisted event

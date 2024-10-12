@@ -1,0 +1,28 @@
+MultiOwnableUpgradeableTest
+├── when initializing the contract
+│   └── when given a whitelisted quorum address
+│       └── it should initialize correctly
+│
+├── when calling an onlyOwners function
+│   ├── when called by a non-owner
+│   │   └── it should revert
+│   └── when called by an owner
+│       ├── when it's the first approval
+│       │   ├── it should record the approval
+│       │   ├── it should emit a RequestApproved event
+│       │   └── it should not execute the function
+│       ├── when it's not the last required approval
+│       │   ├── it should record the approval
+│       │   ├── it should emit a RequestApproved event
+│       │   └── it should not execute the function
+│       └── when it's the last required approval
+│           ├── it should record the approval
+│           ├── it should emit a RequestApproved event
+│           ├── it should execute the function
+│           └── it should emit a RequestExecuted event
+│
+└── when checking owner status
+    ├── when checking a non-owner address
+    │   └── it should return false
+    └── when checking an owner address
+        └── it should return true
