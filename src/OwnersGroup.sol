@@ -19,11 +19,18 @@ contract OwnersGroup is Initializable, IOwnersGroup {
 
     uint256 public override minRequiredApprovers;
 
-    /// @notice Initializes the contract with a set of owners and minimum required approvers
+    uint256 public requestExpirationTime;
+    mapping(address => mapping(bytes32 => uint256)) private _firstApprovalTime;
+
+    /// @notice Initializes the contract with a set of owners, minimum required approvers, and request expiration time
     /// @param initialOwners Array of initial owner addresses
     /// @param _minRequiredApprovers Minimum number of approvers required for actions
+    /// @param _requestExpirationTime Time in seconds after which a request expires
     /// @dev This function can only be called once due to the initializer modifier
-    function initialize(address[] memory initialOwners, uint256 _minRequiredApprovers) public initializer {
+    function initialize(address[] memory initialOwners, uint256 _minRequiredApprovers, uint256 _requestExpirationTime)
+        public
+        initializer
+    {
         if (initialOwners.length == 0) {
             revert NoOwnersProvided();
         }
@@ -42,6 +49,7 @@ contract OwnersGroup is Initializable, IOwnersGroup {
             }
         }
         minRequiredApprovers = _minRequiredApprovers;
+        requestExpirationTime = _requestExpirationTime;
     }
 
     /// @notice Modifier to restrict access to owners only
@@ -103,6 +111,15 @@ contract OwnersGroup is Initializable, IOwnersGroup {
         if (!isOwner[owner]) {
             revert NotOwner(owner);
         }
+
+        uint256 firstApprovalTime = _firstApprovalTime[sender][reqHash];
+        if (firstApprovalTime == 0) {
+            _firstApprovalTime[sender][reqHash] = block.timestamp;
+        } else if (block.timestamp > firstApprovalTime + requestExpirationTime) {
+            _resetRequest(sender, reqHash);
+            revert RequestHasExpired(sender, reqHash);
+        }
+
         if (!_approvals[sender][reqHash][owner]) {
             _approvals[sender][reqHash][owner] = true;
             _approvalCount[sender][reqHash]++;
@@ -110,14 +127,22 @@ contract OwnersGroup is Initializable, IOwnersGroup {
         }
 
         if (_shouldExecute(sender, reqHash)) {
-            delete _approvalCount[sender][reqHash];
-            for (uint256 i = 0; i < owners.length; i++) {
-                delete _approvals[sender][reqHash][owners[i]];
-            }
+            _resetRequest(sender, reqHash);
             emit RequestExecuted(sender, reqHash);
             return true;
         } else {
             return false;
+        }
+    }
+
+    /// @notice Resets the request data when it expires or is executed
+    /// @param sender Address initiating the request
+    /// @param reqHash Hash of the request
+    function _resetRequest(address sender, bytes32 reqHash) internal {
+        delete _approvalCount[sender][reqHash];
+        delete _firstApprovalTime[sender][reqHash];
+        for (uint256 i = 0; i < owners.length; i++) {
+            delete _approvals[sender][reqHash][owners[i]];
         }
     }
 
@@ -179,5 +204,12 @@ contract OwnersGroup is Initializable, IOwnersGroup {
     function _setMinRequiredApprovers(uint256 _minRequiredApprovers) internal onlyApproved {
         minRequiredApprovers = _minRequiredApprovers;
         emit MinRequiredApproversChanged(_minRequiredApprovers);
+    }
+
+    /// @notice Sets the request expiration time
+    /// @param _requestExpirationTime New expiration time in seconds
+    function setRequestExpirationTime(uint256 _requestExpirationTime) external onlyOwners onlyApproved {
+        requestExpirationTime = _requestExpirationTime;
+        emit RequestExpirationTimeChanged(_requestExpirationTime);
     }
 }

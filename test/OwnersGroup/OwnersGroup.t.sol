@@ -9,6 +9,7 @@ contract OwnersGroupTest is Test {
     OwnersGroup public ownersGroup;
     address[] public initialOwners;
     uint256 public constant INITIAL_MIN_APPROVERS = 2;
+    uint256 public constant INITIAL_EXPIRATION_TIME = 1 days;
 
     address public owner1 = address(1);
     address public owner2 = address(2);
@@ -23,7 +24,7 @@ contract OwnersGroupTest is Test {
         initialOwners[2] = owner3;
 
         ownersGroup = new OwnersGroup();
-        ownersGroup.initialize(initialOwners, INITIAL_MIN_APPROVERS);
+        ownersGroup.initialize(initialOwners, INITIAL_MIN_APPROVERS, INITIAL_EXPIRATION_TIME);
 
         for (uint256 i = 0; i < initialOwners.length; i++) {
             vm.prank(initialOwners[i]);
@@ -35,7 +36,7 @@ contract OwnersGroupTest is Test {
         OwnersGroup newOwnersGroup = new OwnersGroup();
         address[] memory emptyOwners;
         vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.NoOwnersProvided.selector));
-        newOwnersGroup.initialize(emptyOwners, 1);
+        newOwnersGroup.initialize(emptyOwners, 1, 1 days);
     }
 
     function test_InitializeWithZeroAddress() public {
@@ -45,7 +46,7 @@ contract OwnersGroupTest is Test {
         ownersWithZero[1] = address(0);
         ownersWithZero[2] = address(3);
         vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.InvalidOwner.selector, address(0)));
-        newOwnersGroup.initialize(ownersWithZero, 2);
+        newOwnersGroup.initialize(ownersWithZero, 2, 1 days);
     }
 
     function test_InitializeWithValidOwners() public view {
@@ -58,10 +59,10 @@ contract OwnersGroupTest is Test {
     function test_InitializeWithInvalidMinRequiredApprovers() public {
         OwnersGroup newOwnersGroup = new OwnersGroup();
         vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.InvalidMinRequiredApprovers.selector, 4, 1, 3));
-        newOwnersGroup.initialize(initialOwners, 4);
+        newOwnersGroup.initialize(initialOwners, 4, 1 days);
 
         vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.InvalidMinRequiredApprovers.selector, 0, 1, 3));
-        newOwnersGroup.initialize(initialOwners, 0);
+        newOwnersGroup.initialize(initialOwners, 0, 1 days);
     }
 
     function test_OnlyOwnersModifier() public {
@@ -184,5 +185,56 @@ contract OwnersGroupTest is Test {
         vm.prank(whitelistedContract);
         bool isApproved = ownersGroup.approve(reqHash, initialOwners[0]);
         assertFalse(isApproved);
+    }
+
+    function test_ApproveRequestExpired() public {
+        bytes32 reqHash = keccak256("test request");
+
+        // First approval
+        vm.prank(whitelistedContract);
+        ownersGroup.approve(reqHash, initialOwners[0]);
+
+        // Move time forward past the expiration time
+        vm.warp(block.timestamp + INITIAL_EXPIRATION_TIME + 1);
+
+        // Try to approve again
+        vm.prank(whitelistedContract);
+        vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.RequestHasExpired.selector, whitelistedContract, reqHash));
+        ownersGroup.approve(reqHash, initialOwners[1]);
+
+        // Verify that the request data has been reset
+        // assertEq(ownersGroup.getApprovalCount(whitelistedContract, reqHash), 0);
+    }
+
+    function test_SetRequestExpirationTime() public {
+        uint256 newExpirationTime = 2 days;
+        bytes32 reqHash = keccak256(
+            abi.encodePacked(
+                abi.encodeWithSelector(OwnersGroup.setRequestExpirationTime.selector, newExpirationTime),
+                block.chainid,
+                address(ownersGroup)
+            )
+        );
+
+        for (uint256 i = 0; i < INITIAL_MIN_APPROVERS; i++) {
+            vm.prank(initialOwners[i]);
+            vm.expectEmit(true, true, true, true);
+            emit IOwnersGroup.RequestApproved(address(ownersGroup), reqHash, i + 1);
+            if (i == INITIAL_MIN_APPROVERS - 1) {
+                vm.expectEmit(true, true, true, true);
+                emit IOwnersGroup.RequestExecuted(address(ownersGroup), reqHash);
+                vm.expectEmit(true, true, true, true);
+                emit IOwnersGroup.RequestExpirationTimeChanged(newExpirationTime);
+            }
+            ownersGroup.setRequestExpirationTime(newExpirationTime);
+        }
+        assertEq(ownersGroup.requestExpirationTime(), newExpirationTime);
+    }
+
+    function test_SetRequestExpirationTimeWithoutFullApproval() public {
+        uint256 newExpirationTime = 2 days;
+        vm.prank(initialOwners[0]);
+        ownersGroup.setRequestExpirationTime(newExpirationTime);
+        assertEq(ownersGroup.requestExpirationTime(), INITIAL_EXPIRATION_TIME);
     }
 }

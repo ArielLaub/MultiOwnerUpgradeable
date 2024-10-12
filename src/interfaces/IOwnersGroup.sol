@@ -8,6 +8,8 @@ interface IOwnersGroup {
     event RequestApproved(address indexed sender, bytes32 indexed reqHash, uint256 approvalCount);
     event RequestExecuted(address indexed sender, bytes32 indexed reqHash);
     event MinRequiredApproversChanged(uint256 newMinRequiredApprovers);
+    event RequestExpired(address indexed sender, bytes32 indexed reqHash);
+    event RequestExpirationTimeChanged(uint256 newExpirationTime);
 
     error NotOwner(address account);
     error NotWhitelisted(address account);
@@ -15,6 +17,7 @@ interface IOwnersGroup {
     error NoOwnersProvided();
     error InvalidMinRequiredApprovers(uint256 provided, uint256 minAllowed, uint256 maxAllowed);
     error CannotRemoveOwner(uint256 currentOwnerCount, uint256 minRequiredApprovers);
+    error RequestHasExpired(address sender, bytes32 reqHash);
 
     function owners(uint256 index) external view returns (address);
     function ownerCount() external view returns (uint256);

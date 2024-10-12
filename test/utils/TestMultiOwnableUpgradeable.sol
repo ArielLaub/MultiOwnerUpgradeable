@@ -6,7 +6,7 @@ import {IOwnersGroup} from "../../src/interfaces/IOwnersGroup.sol";
 contract TestMultiOwnableUpgradeable is MultiOwnableUpgradeable {
     uint256 private _someValue;
 
-    function initialize(IOwnersGroup _ownersGroup) public initializer {
+    function initialize(IOwnersGroup _ownersGroup) public override initializer {
         __MultiOwnableUpgradeable_init(_ownersGroup);
     }
 

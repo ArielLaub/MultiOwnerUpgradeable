@@ -63,6 +63,9 @@ OwnersGroupTest
 │           ├── it should emit a RequestExecuted event
 │           ├── it should reset approvals for the request
 │           └── it should return true
+│       └── when the request has expired
+│           ├── it should revert with RequestExpired error
+│           └── it should reset the request data
 │
 ├── when checking if a request is approved
 │   ├── when called by a non-whitelisted address
@@ -79,3 +82,10 @@ OwnersGroupTest
     └── when called with full approval
         ├── it should change the whitelist status
         └── it should emit a Whitelisted event
+
+├── when setting the request expiration time
+│   ├── when called without full approval
+│   │   └── it should not change the expiration time
+│   └── when called with full approval
+│       ├── it should change the expiration time
+│       └── it should emit a RequestExpirationTimeChanged event

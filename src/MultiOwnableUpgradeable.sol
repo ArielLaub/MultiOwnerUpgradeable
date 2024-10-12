@@ -2,22 +2,19 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {IOwnersGroup} from "./OwnersGroup.sol";
+import {IOwnersGroup} from "./interfaces/IOwnersGroup.sol";
+import {IMultiOwnableUpgradeable} from "./interfaces/IMultiOwnableUpgradeable.sol";
 
 /// @title MultiOwnableUpgradeable
 /// @notice An abstract contract for multi-owner functionality with upgradeability
 /// @dev Inherits from Initializable for upgradeability support
-abstract contract MultiOwnableUpgradeable is Initializable {
+abstract contract MultiOwnableUpgradeable is Initializable, IMultiOwnableUpgradeable {
     /// @notice The contract managing the group of owners
     IOwnersGroup public ownersGroup;
 
-    /// @notice Error thrown when a non-owner tries to access an owner-only function
-    /// @param account The address that attempted the action
-    error NotOwner(address account);
-
-    /// @notice Error thrown when a non-whitelisted contract address is used
-    /// @param contractAddress The address that was not whitelisted
-    error NotWhitelisted(address contractAddress);
+    function initialize(IOwnersGroup _ownersGroup) public virtual initializer {
+        __MultiOwnableUpgradeable_init(_ownersGroup);
+    }
 
     /// @notice Initializes the contract with an owners group
     /// @param _ownersGroup The address of the OwnersGroup contract

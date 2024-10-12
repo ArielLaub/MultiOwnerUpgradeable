@@ -24,7 +24,7 @@ contract MultiOwnableUpgradeableOnlyOwnersTest is Test {
         owners[2] = owner3;
 
         ownersGroup = new OwnersGroup();
-        ownersGroup.initialize(owners, owners.length);
+        ownersGroup.initialize(owners, owners.length, 1 days);
 
         testContract = new TestMultiOwnableUpgradeable();
         testContract.initialize(ownersGroup);

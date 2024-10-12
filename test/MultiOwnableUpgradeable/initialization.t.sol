@@ -20,7 +20,7 @@ contract MultiOwnableUpgradeableInitializationTest is Test {
         validOwners[2] = owner3;
 
         ownersGroup = new OwnersGroup();
-        ownersGroup.initialize(validOwners, validOwners.length);
+        ownersGroup.initialize(validOwners, validOwners.length, 1 days);
     }
 
     function test_CorrectInitialization() public {
