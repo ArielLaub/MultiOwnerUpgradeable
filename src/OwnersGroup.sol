@@ -10,7 +10,6 @@ import {IOwnersGroup} from "./interfaces/IOwnersGroup.sol";
 /// @dev Inherits from Initializable and implements IOwnersGroup
 contract OwnersGroup is Initializable, IOwnersGroup {
     address[] public owners;
-    uint256 public ownerCount;
     mapping(address => bool) public isOwner;
 
     mapping(address => mapping(bytes32 => mapping(address => bool))) private _approvals;
@@ -45,7 +44,6 @@ contract OwnersGroup is Initializable, IOwnersGroup {
             if (!isOwner[initialOwners[i]]) {
                 isOwner[initialOwners[i]] = true;
                 owners.push(initialOwners[i]);
-                ownerCount++;
             }
         }
         minRequiredApprovers = _minRequiredApprovers;
@@ -88,8 +86,8 @@ contract OwnersGroup is Initializable, IOwnersGroup {
     /// @notice Removes an owner from the group
     /// @param ownerToRemove Address of the owner to be removed
     function removeOwner(address ownerToRemove) external onlyOwners {
-        if (ownerCount <= minRequiredApprovers) {
-            revert CannotRemoveOwner(ownerCount, minRequiredApprovers);
+        if (owners.length <= minRequiredApprovers) {
+            revert CannotRemoveOwner(owners.length, minRequiredApprovers);
         }
         _removeOwner(ownerToRemove);
     }
@@ -168,7 +166,6 @@ contract OwnersGroup is Initializable, IOwnersGroup {
         if (!isOwner[newOwner]) {
             isOwner[newOwner] = true;
             owners.push(newOwner);
-            ownerCount++;
             emit OwnerAdded(newOwner);
         }
     }
@@ -185,7 +182,6 @@ contract OwnersGroup is Initializable, IOwnersGroup {
                     break;
                 }
             }
-            ownerCount--;
             emit OwnerRemoved(ownerToRemove);
         }
     }
@@ -193,8 +189,8 @@ contract OwnersGroup is Initializable, IOwnersGroup {
     /// @notice Sets the minimum number of required approvers
     /// @param _minRequiredApprovers New minimum number of required approvers
     function setMinRequiredApprovers(uint256 _minRequiredApprovers) external override onlyOwners {
-        if (_minRequiredApprovers == 0 || _minRequiredApprovers > ownerCount) {
-            revert InvalidMinRequiredApprovers(_minRequiredApprovers, 1, ownerCount);
+        if (_minRequiredApprovers == 0 || _minRequiredApprovers > owners.length) {
+            revert InvalidMinRequiredApprovers(_minRequiredApprovers, 1, owners.length);
         }
         _setMinRequiredApprovers(_minRequiredApprovers);
     }
@@ -211,5 +207,9 @@ contract OwnersGroup is Initializable, IOwnersGroup {
     function setRequestExpirationTime(uint256 _requestExpirationTime) external onlyOwners onlyApproved {
         requestExpirationTime = _requestExpirationTime;
         emit RequestExpirationTimeChanged(_requestExpirationTime);
+    }
+
+    function ownerCount() external view returns (uint256) {
+        return owners.length;
     }
 }
