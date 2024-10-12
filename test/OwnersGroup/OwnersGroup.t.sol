@@ -200,10 +200,8 @@ contract OwnersGroupTest is Test {
         // Try to approve again
         vm.prank(whitelistedContract);
         vm.expectRevert(abi.encodeWithSelector(IOwnersGroup.RequestHasExpired.selector, whitelistedContract, reqHash));
-        ownersGroup.approve(reqHash, initialOwners[1]);
-
-        // Verify that the request data has been reset
-        // assertEq(ownersGroup.getApprovalCount(whitelistedContract, reqHash), 0);
+        bool isApproved = ownersGroup.approve(reqHash, initialOwners[1]);
+        assertFalse(isApproved);
     }
 
     function test_SetRequestExpirationTime() public {
