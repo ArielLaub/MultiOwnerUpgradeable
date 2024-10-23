@@ -12,14 +12,19 @@ contract OwnersGroup is Initializable, IOwnersGroup {
     address[] public owners;
     mapping(address => bool) public isOwner;
 
-    mapping(address => mapping(bytes32 => mapping(address => bool))) private _approvals;
-    mapping(address => mapping(bytes32 => uint256)) private _approvalCount;
-    mapping(address => bool) public isWhitelisted;
-
+    // minimum number of approvers required for executing a request
     uint256 public override minRequiredApprovers;
-
+    // time in seconds after which a request expires - all approvals need to be collected within this time frame
     uint256 public requestExpirationTime;
+
+    // sender => requestHash => owner => approval
+    mapping(address => mapping(bytes32 => mapping(address => bool))) private _approvals;
+    // sender => requestHash => approvalCount
+    mapping(address => mapping(bytes32 => uint256)) private _approvalCount;
+    // sender => requestHash => firstApprovalTime
     mapping(address => mapping(bytes32 => uint256)) private _firstApprovalTime;
+    // sender => whitelisted
+    mapping(address => bool) public isWhitelisted;
 
     /// @notice Initializes the contract with a set of owners, minimum required approvers, and request expiration time
     /// @param initialOwners Array of initial owner addresses
